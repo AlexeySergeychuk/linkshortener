@@ -8,8 +8,21 @@ import (
 	"github.com/AlexeySergeychuk/linkshortener/internal/app/shortener"
 )
 
+type HandlerService interface {
+	CreateLinkHandler(w http.ResponseWriter, r *http.Request)
+	GetLinkHandler(w http.ResponseWriter, r *http.Request)
+}
+
+type Handler struct {
+	shortener shortener.ShortenerService
+}
+
+func NewHandler(s shortener.ShortenerService) *Handler{
+	return &Handler{shortener: s}
+}
+
 // Создаем короткую ссылку
-func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -20,24 +33,30 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	if len(body) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	
 	defer r.Body.Close()
 
 	log.Printf("Body: %s", string(body))
 	// Отправка тела запроса обратно в ответ
-	shortLink := shortener.MakeShortLink(string(body))
+	shortLink := h.shortener.MakeShortLink(string(body))
 
 	log.Printf("ShortLink: %s", shortLink)
-	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusCreated)
 	io.WriteString(w, shortLink)
 }
 
 // Вовращаем полную ссылку
-func GetLinkHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetLinkHandler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	log.Printf("Path: %s", path)
 
-	fullLink := shortener.GetFullLink(path)
+	fullLink := h.shortener.GetFullLink(path)
 	if fullLink == "" {
 		w.WriteHeader(http.StatusBadRequest)
 	}

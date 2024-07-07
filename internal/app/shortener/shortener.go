@@ -5,23 +5,36 @@ import (
 	"golang.org/x/exp/rand"
 )
 
+type ShortenerService interface {
+	MakeShortLink(link string) string
+	GetFullLink(shortLink string) string
+}
+
+type Shortener struct {
+	repo repository.Repository
+}
+
+func NewShortener(r repository.Repository) *Shortener {
+	return &Shortener{repo: r}
+} 
+
 // Сохраняет в мапу пару shortLink:longLink
-func MakeShortLink(link string) string {
+func (s *Shortener) MakeShortLink(link string) string {
 	
 	// Исключаем отправку разных шортов на один и тот же поданный линк
-	if hasCashedLink, shortLink := repository.CheckAlreadyHaveShortLink(link); hasCashedLink {
+	if hasCashedLink, shortLink := s.repo.CheckAlreadyHaveShortLink(link); hasCashedLink {
 		return makeShortLink(shortLink)
 	}
 
 	 shortPath := randomString()
-	 repository.SaveLinks(shortPath, link)
+	 s.repo.SaveLinks(shortPath, link)
 	
 	 return makeShortLink(shortPath)
 }
 
 // Возвращаем полный линк
-func GetFullLink(shortLink string) string {
-	return repository.GetFullLink(shortLink)
+func (s *Shortener) GetFullLink(shortLink string) string {
+	return s.repo.GetFullLink(shortLink)
 }
 
 // Создает короткую ссылку
