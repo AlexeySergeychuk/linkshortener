@@ -24,7 +24,7 @@ func createLinkHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Body: %s", string(body))
 	// Отправка тела запроса обратно в ответ
-	shortLink := shortener.MakeShortLink(string(body));
+	shortLink := shortener.MakeShortLink(string(body))
 
 	log.Printf("ShortLink: %s", shortLink)
 	w.WriteHeader(http.StatusCreated)
