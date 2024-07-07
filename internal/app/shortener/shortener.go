@@ -1,30 +1,27 @@
 package shortener
 
 import (
+	"github.com/AlexeySergeychuk/linkshortener/internal/app/repository"
 	"golang.org/x/exp/rand"
 )
-
-var MapStorage = map[string]string{}
 
 // Сохраняет в мапу пару shortLink:longLink
 func MakeShortLink(link string) string {
 	
 	// Исключаем отправку разных шортов на один и тот же поданный линк
-	for k, v := range MapStorage {
-		if v == link {
-			return makeShortLink(k)
-		}
+	if hasCashedLink, shortLink := repository.CheckAlreadyHaveShortLink(link); hasCashedLink {
+		return makeShortLink(shortLink)
 	}
 
 	 shortPath := randomString()
-	 MapStorage[shortPath] = link
+	 repository.SaveLinks(shortPath, link)
 	
 	 return makeShortLink(shortPath)
 }
 
 // Возвращаем полный линк
 func GetFullLink(shortLink string) string {
-	return MapStorage[shortLink]
+	return repository.GetFullLink(shortLink)
 }
 
 // Создает короткую ссылку
