@@ -1,32 +1,36 @@
 package shortener
 
-import (
-	"github.com/AlexeySergeychuk/linkshortener/internal/app/repository"
-	"golang.org/x/exp/rand"
-)
+type Repository interface {
+    SaveLinks(shortPath, link string)
+	FindByShortLink(shortLink string) string
+	FindByFullLink(link string) (bool, string)
+}
 
-type ShortenerService interface {
-	MakeShortLink(link string) string
-	GetFullLink(shortLink string) string
+type ShortLinker interface {
+	MakeShortPath(link string) string
 }
 
 type Shortener struct {
-	repo repository.Repository
+	repo Repository
+	shortLinker ShortLinker
 }
 
-func NewShortener(r repository.Repository) *Shortener {
-	return &Shortener{repo: r}
+func NewShortener(r Repository, s ShortLinker) *Shortener {
+	return &Shortener{
+		repo: r, 
+		shortLinker: s,
+	}
 } 
 
 // Сохраняет в мапу пару shortLink:longLink
 func (s *Shortener) MakeShortLink(link string) string {
 	
 	// Исключаем отправку разных шортов на один и тот же поданный линк
-	if hasCashedLink, shortLink := s.repo.CheckAlreadyHaveShortLink(link); hasCashedLink {
+	if hasCashedLink, shortLink := s.repo.FindByFullLink(link); hasCashedLink {
 		return makeShortLink(shortLink)
 	}
 
-	 shortPath := randomString()
+	 shortPath := s.shortLinker.MakeShortPath(link)
 	 s.repo.SaveLinks(shortPath, link)
 	
 	 return makeShortLink(shortPath)
@@ -34,20 +38,9 @@ func (s *Shortener) MakeShortLink(link string) string {
 
 // Возвращаем полный линк
 func (s *Shortener) GetFullLink(shortLink string) string {
-	return s.repo.GetFullLink(shortLink)
+	return s.repo.FindByShortLink(shortLink)
 }
 
-// Создает короткую ссылку
-func randomString() string {
-    letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
-    rand.Seed(rand.Uint64())
-
-    b := make([]rune, 6)
-    for i := range b {
-        b[i] = letters[rand.Intn(len(letters))]
-    }
-    return "/" + string(b)
-}
 
 // Возвращает готовый короткий урл
 func makeShortLink(randomstring string) string {

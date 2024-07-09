@@ -1,13 +1,5 @@
 package repository
 
-// var mapStorage = map[string]string{}
-
-type Repository interface {
-    SaveLinks(shortPath, link string)
-	GetFullLink(shortLink string) string
-	CheckAlreadyHaveShortLink(link string) (bool, string)
-}
-
 type Repo struct {
 	bdStub map[string]string
 }
@@ -22,12 +14,12 @@ func (r *Repo) SaveLinks(shortLink, link string) {
 }
 
 // Вернуть full link
-func (r *Repo) GetFullLink(shortLink string) string {
+func (r *Repo) FindByShortLink(shortLink string) string {
 	return r.bdStub[shortLink]
 }
 
 // Проверить, не был ли ранее записан этот шорт линк
-func (r *Repo) CheckAlreadyHaveShortLink(link string) (bool, string) {
+func (r *Repo) FindByFullLink(link string) (bool, string) {
 	for k, v := range r.bdStub {
 		if v == link {
 			return true, k

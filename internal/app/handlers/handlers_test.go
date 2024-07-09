@@ -7,28 +7,37 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/AlexeySergeychuk/linkshortener/internal/app/shortener"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-type MockShortenerService struct {
+type MockRepository struct {
 	mock.Mock
 }
 
-func (s *MockShortenerService) MakeShortLink(link string) string {
-	args := s.Called(link)
-	return args.String(0)
+type MockShortLinker struct {
+	mock.Mock
 }
 
-func (s *MockShortenerService) GetFullLink(shortLink string) string {
+func (s *MockRepository) SaveLinks(shortLink, link string) {
+	s.Called(shortLink, link)
+}
+
+func (s *MockRepository) FindByShortLink(shortLink string) string {
 	args := s.Called(shortLink)
 	return args.String(0)
 }
 
-func (s *MockShortenerService) CheckAlreadyHaveShortLink(link string) (bool, string) {
+func (s *MockRepository) FindByFullLink(link string) (bool, string) {
 	args := s.Called(link)
 	return args.Bool(0), args.String(1)
+}
+
+func (s *MockShortLinker) MakeShortPath(link string) string {
+	args := s.Called(link)
+	return args.String(0)
 }
 
 func TestCreateLinkHandler(t *testing.T) {
@@ -41,14 +50,29 @@ func TestCreateLinkHandler(t *testing.T) {
 	tests := []struct {
 		name        string
 		requestBody string
+		isAlreadyHaveLink bool
+		shortLink string
 		want        want
 	}{
 		{
-			name:        "positive test",
+			name:        "positive test with new link",
 			requestBody: "test.ru",
+			isAlreadyHaveLink: false,
+			shortLink: "/rtFgD",
 			want: want{
 				code:         http.StatusCreated,
 				responseText: "http://localhost:8080/rtFgD",
+				contentType:  "text/plain",
+			},
+		},
+		{
+			name:        "positive test when link is already in bd",
+			requestBody: "test.ru",
+			isAlreadyHaveLink: true,
+			shortLink: "/rtFgD1",
+			want: want{
+				code:         http.StatusCreated,
+				responseText: "http://localhost:8080/rtFgD1",
 				contentType:  "text/plain",
 			},
 		},
@@ -65,13 +89,20 @@ func TestCreateLinkHandler(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Arrange
-			mockShortener := new(MockShortenerService)
+			mockRepository := new(MockRepository)
+			mockShortLinker := new(MockShortLinker)
 
-			mockShortener.On("MakeShortLink", test.requestBody).Return(test.want.responseText)
+			mockRepository.On("FindByFullLink", test.requestBody).Return(test.isAlreadyHaveLink, test.shortLink)
 
+			if !test.isAlreadyHaveLink {
+				mockRepository.On("SaveLinks", mock.Anything, test.requestBody).Return(test.want.responseText)
+				mockShortLinker.On("MakeShortPath", test.requestBody).Return(test.shortLink)
+			}
+			
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.requestBody))
 			w := httptest.NewRecorder()
-			handler := NewHandler(mockShortener)
+			shortener := shortener.NewShortener(mockRepository, mockShortLinker)
+			handler := NewHandler(shortener)
 
 			// Act
 			handler.CreateLinkHandler(w, request)
@@ -88,9 +119,12 @@ func TestCreateLinkHandler(t *testing.T) {
 
 			// Если requestBody пустой, убедимся что мок не ипользуется
 			if test.requestBody == "" {
-				mockShortener.AssertNotCalled(t, "MakeShortLink", mock.Anything)
+				mockRepository.AssertNotCalled(t, "FindByFullLink", mock.Anything)
+				mockRepository.AssertNotCalled(t, "SaveLinks", mock.Anything, mock.Anything)
+				mockShortLinker.AssertNotCalled(t, "MakeShortPath", mock.Anything)
 			} else {
-				mockShortener.AssertExpectations(t)
+				mockRepository.AssertExpectations(t)
+				mockShortLinker.AssertExpectations(t)
 			}
 		})
 	}
@@ -117,17 +151,28 @@ func TestHandler_GetLinkHandler(t *testing.T) {
 				headerValue: "test.ru",
 			},
 		},
+			{
+			name: "negative test when we have no fullLink by shortLink",
+			path: "/rtFgD",
+			headerName: "Location",
+			want: want{
+				code: http.StatusBadRequest,
+				headerValue: "",
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Assert
-			mockShortener := new(MockShortenerService)
-			mockShortener.On("GetFullLink", test.path).Return(test.want.headerValue)
+			mockRepository := new(MockRepository)
+			mockShortLinker := new(MockShortLinker)
+			mockRepository.On("FindByShortLink", mock.Anything ).Return(test.want.headerValue)
 
 			request := httptest.NewRequest(http.MethodPost, test.path, nil)
 			w := httptest.NewRecorder()
-			handler := NewHandler(mockShortener)
+			shortener := shortener.NewShortener(mockRepository, mockShortLinker)
+			handler := NewHandler(shortener)
 
 			// Act
 			handler.GetLinkHandler(w, request)

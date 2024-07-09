@@ -8,10 +8,16 @@ import (
 	"github.com/AlexeySergeychuk/linkshortener/internal/app/shortener"
 )
 
+type HandlerService interface {
+	CreateLinkHandler(w http.ResponseWriter, r *http.Request)
+	GetLinkHandler(w http.ResponseWriter, r *http.Request)
+}
+
 func main() {
 	mapStorage := make(map[string]string)
 	repo := repository.NewRepo(mapStorage)
-	shortener := shortener.NewShortener(repo)
+	shortLinkStub := shortener.NewShortLink()
+	shortener := shortener.NewShortener(repo, shortLinkStub)
 	handler := handlers.NewHandler(shortener)
 
 	mux := http.NewServeMux()

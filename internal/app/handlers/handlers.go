@@ -4,20 +4,18 @@ import (
 	"io"
 	"log"
 	"net/http"
-
-	"github.com/AlexeySergeychuk/linkshortener/internal/app/shortener"
 )
 
-type HandlerService interface {
-	CreateLinkHandler(w http.ResponseWriter, r *http.Request)
-	GetLinkHandler(w http.ResponseWriter, r *http.Request)
+type ShortenerService interface {
+	MakeShortLink(link string) string
+	GetFullLink(shortLink string) string
 }
 
 type Handler struct {
-	shortener shortener.ShortenerService
+	shortener ShortenerService
 }
 
-func NewHandler(s shortener.ShortenerService) *Handler{
+func NewHandler(s ShortenerService) *Handler{
 	return &Handler{shortener: s}
 }
 
