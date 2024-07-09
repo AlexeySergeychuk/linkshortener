@@ -2,7 +2,6 @@ package shortener
 
 import (
 	"github.com/AlexeySergeychuk/linkshortener/internal/app/repository"
-	"golang.org/x/exp/rand"
 )
 
 type ShortenerService interface {
@@ -12,10 +11,14 @@ type ShortenerService interface {
 
 type Shortener struct {
 	repo repository.Repository
+	shortLinker ShortLinker
 }
 
-func NewShortener(r repository.Repository) *Shortener {
-	return &Shortener{repo: r}
+func NewShortener(r repository.Repository, s ShortLinker) *Shortener {
+	return &Shortener{
+		repo: r, 
+		shortLinker: s,
+	}
 } 
 
 // Сохраняет в мапу пару shortLink:longLink
@@ -26,7 +29,7 @@ func (s *Shortener) MakeShortLink(link string) string {
 		return makeShortLink(shortLink)
 	}
 
-	 shortPath := randomString()
+	 shortPath := s.shortLinker.RandomString(link)
 	 s.repo.SaveLinks(shortPath, link)
 	
 	 return makeShortLink(shortPath)
@@ -37,17 +40,6 @@ func (s *Shortener) GetFullLink(shortLink string) string {
 	return s.repo.GetFullLink(shortLink)
 }
 
-// Создает короткую ссылку
-func randomString() string {
-    letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
-    rand.Seed(rand.Uint64())
-
-    b := make([]rune, 6)
-    for i := range b {
-        b[i] = letters[rand.Intn(len(letters))]
-    }
-    return "/" + string(b)
-}
 
 // Возвращает готовый короткий урл
 func makeShortLink(randomstring string) string {

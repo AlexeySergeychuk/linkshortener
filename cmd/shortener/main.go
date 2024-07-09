@@ -11,7 +11,8 @@ import (
 func main() {
 	mapStorage := make(map[string]string)
 	repo := repository.NewRepo(mapStorage)
-	shortener := shortener.NewShortener(repo)
+	shortLinkStub := shortener.NewShortLink()
+	shortener := shortener.NewShortener(repo, shortLinkStub)
 	handler := handlers.NewHandler(shortener)
 
 	mux := http.NewServeMux()
