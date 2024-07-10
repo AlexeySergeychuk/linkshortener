@@ -4,6 +4,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ShortenerService interface {
@@ -20,46 +22,40 @@ func NewHandler(s ShortenerService) *Handler{
 }
 
 // Создаем короткую ссылку
-func (h *Handler) CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
+func (h *Handler) CreateLinkHandler(c *gin.Context) {
 
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
 	if len(body) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
+		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 	
-	defer r.Body.Close()
+	defer c.Request.Body.Close()
 
 	log.Printf("Body: %s", string(body))
 	// Отправка тела запроса обратно в ответ
 	shortLink := h.shortener.MakeShortLink(string(body))
-
 	log.Printf("ShortLink: %s", shortLink)
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusCreated)
-	io.WriteString(w, shortLink)
+	
+	c.String(http.StatusCreated, shortLink)
 }
 
 // Вовращаем полную ссылку
-func (h *Handler) GetLinkHandler(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Path
-	log.Printf("Path: %s", path)
+func (h *Handler) GetLinkHandler(c *gin.Context) {
+	shortLink := c.Param("id")
 
-	fullLink := h.shortener.GetFullLink(path)
+	log.Printf("shortLink in request: %s", shortLink)
+	fullLink := h.shortener.GetFullLink("/" + shortLink)
 	if fullLink == "" {
-		w.WriteHeader(http.StatusBadRequest)
+		c.String(http.StatusNotFound, "Link not found")
+		return
 	}
-	log.Printf("Full link: %s", fullLink)
+	log.Printf("Fulllink: %s", fullLink)
 
-	w.Header().Set("Location", fullLink)
-	w.WriteHeader(http.StatusTemporaryRedirect)
+	c.Redirect(http.StatusTemporaryRedirect, fullLink)
 }

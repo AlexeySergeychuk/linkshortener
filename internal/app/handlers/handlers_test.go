@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/AlexeySergeychuk/linkshortener/internal/app/shortener"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -62,7 +63,7 @@ func TestCreateLinkHandler(t *testing.T) {
 			want: want{
 				code:         http.StatusCreated,
 				responseText: "http://localhost:8080/rtFgD",
-				contentType:  "text/plain",
+				contentType:  "text/plain; charset=utf-8",
 			},
 		},
 		{
@@ -73,7 +74,7 @@ func TestCreateLinkHandler(t *testing.T) {
 			want: want{
 				code:         http.StatusCreated,
 				responseText: "http://localhost:8080/rtFgD1",
-				contentType:  "text/plain",
+				contentType:  "text/plain; charset=utf-8",
 			},
 		},
 		{
@@ -99,13 +100,16 @@ func TestCreateLinkHandler(t *testing.T) {
 				mockShortLinker.On("MakeShortPath", test.requestBody).Return(test.shortLink)
 			}
 			
-			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.requestBody))
-			w := httptest.NewRecorder()
 			shortener := shortener.NewShortener(mockRepository, mockShortLinker)
 			handler := NewHandler(shortener)
 
+			router := gin.Default()
+			router.POST("/", handler.CreateLinkHandler)
+			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.requestBody))
+			w := httptest.NewRecorder()
+
 			// Act
-			handler.CreateLinkHandler(w, request)
+			router.ServeHTTP(w, request)
 			response := w.Result()
 			defer response.Body.Close()
 
@@ -148,7 +152,7 @@ func TestHandler_GetLinkHandler(t *testing.T) {
 			headerName: "Location",
 			want: want{
 				code: http.StatusTemporaryRedirect,
-				headerValue: "test.ru",
+				headerValue: "/test.ru",
 			},
 		},
 			{
@@ -156,7 +160,7 @@ func TestHandler_GetLinkHandler(t *testing.T) {
 			path: "/rtFgD",
 			headerName: "Location",
 			want: want{
-				code: http.StatusBadRequest,
+				code: http.StatusNotFound,
 				headerValue: "",
 			},
 		},
@@ -167,15 +171,18 @@ func TestHandler_GetLinkHandler(t *testing.T) {
 			// Assert
 			mockRepository := new(MockRepository)
 			mockShortLinker := new(MockShortLinker)
-			mockRepository.On("FindByShortLink", mock.Anything ).Return(test.want.headerValue)
+			mockRepository.On("FindByShortLink", mock.Anything).Return(test.want.headerValue)
 
-			request := httptest.NewRequest(http.MethodPost, test.path, nil)
-			w := httptest.NewRecorder()
 			shortener := shortener.NewShortener(mockRepository, mockShortLinker)
 			handler := NewHandler(shortener)
 
+			router := gin.Default()
+			router.GET("/:id", handler.GetLinkHandler)
+			request := httptest.NewRequest(http.MethodGet, test.path, nil)
+			w := httptest.NewRecorder()
+
 			// Act
-			handler.GetLinkHandler(w, request)
+			router.ServeHTTP(w, request)
 			response := w.Result()
 			defer response.Body.Close()
 

@@ -1,17 +1,12 @@
 package main
 
 import (
-	"net/http"
+	"github.com/gin-gonic/gin"
 
 	"github.com/AlexeySergeychuk/linkshortener/internal/app/handlers"
 	"github.com/AlexeySergeychuk/linkshortener/internal/app/repository"
 	"github.com/AlexeySergeychuk/linkshortener/internal/app/shortener"
 )
-
-type HandlerService interface {
-	CreateLinkHandler(w http.ResponseWriter, r *http.Request)
-	GetLinkHandler(w http.ResponseWriter, r *http.Request)
-}
 
 func main() {
 	mapStorage := make(map[string]string)
@@ -20,12 +15,9 @@ func main() {
 	shortener := shortener.NewShortener(repo, shortLinkStub)
 	handler := handlers.NewHandler(shortener)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", handler.CreateLinkHandler)
-	mux.HandleFunc("/{id}", handler.GetLinkHandler)
+	router := gin.Default()
+	router.POST("/", handler.CreateLinkHandler)
+	router.GET("/:id", handler.GetLinkHandler)
 
-	err := http.ListenAndServe(":8080", mux)
-	if err != nil {
-		panic(err)
-	}
+	router.Run(":8080")
 }
