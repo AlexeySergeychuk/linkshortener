@@ -45,5 +45,5 @@ func (s *Shortener) GetFullLink(shortLink string) string {
 
 // Возвращает готовый короткий урл
 func makeShortLink(randomstring string) string {
-	return config.FlagShortLinkBaseUrl + randomstring
+	return config.FlagShortLinkAddr + randomstring
 }

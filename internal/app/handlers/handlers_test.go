@@ -63,7 +63,7 @@ func TestCreateLinkHandler(t *testing.T) {
 			shortLink:         "/rtFgD",
 			want: want{
 				code:         http.StatusCreated,
-				responseText: config.FlagShortLinkBaseUrl + "/rtFgD",
+				responseText: config.FlagShortLinkAddr + "/rtFgD",
 				contentType:  "text/plain; charset=utf-8",
 			},
 		},
@@ -74,7 +74,7 @@ func TestCreateLinkHandler(t *testing.T) {
 			shortLink:         "/rtFgD1",
 			want: want{
 				code:         http.StatusCreated,
-				responseText: config.FlagShortLinkBaseUrl + "/rtFgD1",
+				responseText: config.FlagShortLinkAddr + "/rtFgD1",
 				contentType:  "text/plain; charset=utf-8",
 			},
 		},
