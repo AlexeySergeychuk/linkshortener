@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/AlexeySergeychuk/linkshortener/internal/app/config"
 	"github.com/AlexeySergeychuk/linkshortener/internal/app/shortener"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -49,31 +50,31 @@ func TestCreateLinkHandler(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		requestBody string
+		name              string
+		requestBody       string
 		isAlreadyHaveLink bool
-		shortLink string
-		want        want
+		shortLink         string
+		want              want
 	}{
 		{
-			name:        "positive test with new link",
-			requestBody: "test.ru",
+			name:              "positive test with new link",
+			requestBody:       "test.ru",
 			isAlreadyHaveLink: false,
-			shortLink: "/rtFgD",
+			shortLink:         "/rtFgD",
 			want: want{
 				code:         http.StatusCreated,
-				responseText: "http://localhost:8080/rtFgD",
+				responseText: config.FlagShortLinkBaseUrl + "/rtFgD",
 				contentType:  "text/plain; charset=utf-8",
 			},
 		},
 		{
-			name:        "positive test when link is already in bd",
-			requestBody: "test.ru",
+			name:              "positive test when link is already in bd",
+			requestBody:       "test.ru",
 			isAlreadyHaveLink: true,
-			shortLink: "/rtFgD1",
+			shortLink:         "/rtFgD1",
 			want: want{
 				code:         http.StatusCreated,
-				responseText: "http://localhost:8080/rtFgD1",
+				responseText: config.FlagShortLinkBaseUrl + "/rtFgD1",
 				contentType:  "text/plain; charset=utf-8",
 			},
 		},
@@ -99,7 +100,7 @@ func TestCreateLinkHandler(t *testing.T) {
 				mockRepository.On("SaveLinks", mock.Anything, test.requestBody).Return(test.want.responseText)
 				mockShortLinker.On("MakeShortPath", test.requestBody).Return(test.shortLink)
 			}
-			
+
 			shortener := shortener.NewShortener(mockRepository, mockShortLinker)
 			handler := NewHandler(shortener)
 
@@ -136,31 +137,31 @@ func TestCreateLinkHandler(t *testing.T) {
 
 func TestHandler_GetLinkHandler(t *testing.T) {
 	type want struct {
-		code         int
+		code        int
 		headerValue string
 	}
 
 	tests := []struct {
-		name        string
-		path string
+		name       string
+		path       string
 		headerName string
-		want        want
+		want       want
 	}{
 		{
-			name: "positive test",
-			path: "/rtFgD",
+			name:       "positive test",
+			path:       "/rtFgD",
 			headerName: "Location",
 			want: want{
-				code: http.StatusTemporaryRedirect,
+				code:        http.StatusTemporaryRedirect,
 				headerValue: "/test.ru",
 			},
 		},
-			{
-			name: "negative test when we have no fullLink by shortLink",
-			path: "/rtFgD",
+		{
+			name:       "negative test when we have no fullLink by shortLink",
+			path:       "/rtFgD",
 			headerName: "Location",
 			want: want{
-				code: http.StatusNotFound,
+				code:        http.StatusNotFound,
 				headerValue: "",
 			},
 		},

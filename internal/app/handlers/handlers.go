@@ -17,7 +17,7 @@ type Handler struct {
 	shortener ShortenerService
 }
 
-func NewHandler(s ShortenerService) *Handler{
+func NewHandler(s ShortenerService) *Handler {
 	return &Handler{shortener: s}
 }
 
@@ -34,14 +34,14 @@ func (h *Handler) CreateLinkHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	
+
 	defer c.Request.Body.Close()
 
 	log.Printf("Body: %s", string(body))
 	// Отправка тела запроса обратно в ответ
 	shortLink := h.shortener.MakeShortLink(string(body))
 	log.Printf("ShortLink: %s", shortLink)
-	
+
 	c.String(http.StatusCreated, shortLink)
 }
 
