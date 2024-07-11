@@ -12,23 +12,23 @@ type ShortLinker interface {
 	MakeShortPath(link string) string
 }
 
-type Shortener struct {
+type Shorten struct {
 	repo        Repository
 	shortLinker ShortLinker
 }
 
-func NewShortener(r Repository, s ShortLinker) *Shortener {
-	return &Shortener{
+func NewShortener(r Repository, s ShortLinker) *Shorten {
+	return &Shorten{
 		repo:        r,
 		shortLinker: s,
 	}
 }
 
 // Сохраняет в мапу пару shortLink:longLink
-func (s *Shortener) MakeShortLink(link string) string {
+func (s *Shorten) MakeShortLink(link string) string {
 
 	// Исключаем отправку разных шортов на один и тот же поданный линк
-	if hasCashedLink, shortLink := s.repo.FindByFullLink(link); hasCashedLink {
+	if hasSavedLink, shortLink := s.repo.FindByFullLink(link); hasSavedLink {
 		return makeShortLink(shortLink)
 	}
 
@@ -39,7 +39,7 @@ func (s *Shortener) MakeShortLink(link string) string {
 }
 
 // Возвращаем полный линк
-func (s *Shortener) GetFullLink(shortLink string) string {
+func (s *Shorten) GetFullLink(shortLink string) string {
 	return s.repo.FindByShortLink(shortLink)
 }
 

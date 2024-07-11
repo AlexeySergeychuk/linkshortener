@@ -97,7 +97,7 @@ func TestCreateLinkHandler(t *testing.T) {
 			mockRepository.On("FindByFullLink", test.requestBody).Return(test.isAlreadyHaveLink, test.shortLink)
 
 			if !test.isAlreadyHaveLink {
-				mockRepository.On("SaveLinks", mock.Anything, test.requestBody).Return(test.want.responseText)
+				mockRepository.On("SaveLinks", mock.Anything, test.requestBody)
 				mockShortLinker.On("MakeShortPath", test.requestBody).Return(test.shortLink)
 			}
 

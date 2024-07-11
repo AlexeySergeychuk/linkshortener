@@ -8,16 +8,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type ShortenerService interface {
+type Shortener interface {
 	MakeShortLink(link string) string
 	GetFullLink(shortLink string) string
 }
 
 type Handler struct {
-	shortener ShortenerService
+	shortener Shortener
 }
 
-func NewHandler(s ShortenerService) *Handler {
+func NewHandler(s Shortener) *Handler {
 	return &Handler{shortener: s}
 }
 

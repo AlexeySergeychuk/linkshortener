@@ -19,7 +19,7 @@ func ParseFlags() {
 		FlagRunAddr = envRunAddr
 	}
 
-	if envShortLinkAddr := os.Getenv("SERVER_ADDRESS"); envShortLinkAddr != "" {
+	if envShortLinkAddr := os.Getenv("BASE_URL"); envShortLinkAddr != "" {
 		FlagShortLinkAddr = envShortLinkAddr
 	}
 }
