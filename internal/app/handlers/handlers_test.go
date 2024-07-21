@@ -15,29 +15,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type MockRepository struct {
+type mockRepository struct {
 	mock.Mock
 }
 
-type MockShortLinker struct {
+type mockShortLinker struct {
 	mock.Mock
 }
 
-func (s *MockRepository) SaveLinks(shortLink, link string) {
+func (s *mockRepository) SaveLinks(shortLink, link string) {
 	s.Called(shortLink, link)
 }
 
-func (s *MockRepository) FindByShortLink(shortLink string) string {
+func (s *mockRepository) FindByShortLink(shortLink string) string {
 	args := s.Called(shortLink)
 	return args.String(0)
 }
 
-func (s *MockRepository) FindByFullLink(link string) (bool, string) {
+func (s *mockRepository) FindByFullLink(link string) (bool, string) {
 	args := s.Called(link)
 	return args.Bool(0), args.String(1)
 }
 
-func (s *MockShortLinker) MakeShortPath(link string) string {
+func (s *mockShortLinker) MakeShortPath(link string) string {
 	args := s.Called(link)
 	return args.String(0)
 }
@@ -91,8 +91,8 @@ func TestCreateLinkHandler(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Arrange
-			mockRepository := new(MockRepository)
-			mockShortLinker := new(MockShortLinker)
+			mockRepository := new(mockRepository)
+			mockShortLinker := new(mockShortLinker)
 
 			mockRepository.On("FindByFullLink", test.requestBody).Return(test.isAlreadyHaveLink, test.shortLink)
 
@@ -170,8 +170,8 @@ func TestHandler_GetLinkHandler(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Assert
-			mockRepository := new(MockRepository)
-			mockShortLinker := new(MockShortLinker)
+			mockRepository := new(mockRepository)
+			mockShortLinker := new(mockShortLinker)
 			mockRepository.On("FindByShortLink", mock.Anything).Return(test.want.headerValue)
 
 			shortener := shortener.NewShortener(mockRepository, mockShortLinker)

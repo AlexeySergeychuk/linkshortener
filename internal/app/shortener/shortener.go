@@ -2,22 +2,22 @@ package shortener
 
 import "github.com/AlexeySergeychuk/linkshortener/internal/app/config"
 
-type Repository interface {
+type repository interface {
 	SaveLinks(shortPath, link string)
 	FindByShortLink(shortLink string) string
 	FindByFullLink(link string) (bool, string)
 }
 
-type ShortLinker interface {
+type shortLinker interface {
 	MakeShortPath(link string) string
 }
 
 type Shorten struct {
-	repo        Repository
-	shortLinker ShortLinker
+	repo        repository
+	shortLinker shortLinker
 }
 
-func NewShortener(r Repository, s ShortLinker) *Shorten {
+func NewShortener(r repository, s shortLinker) *Shorten {
 	return &Shorten{
 		repo:        r,
 		shortLinker: s,
