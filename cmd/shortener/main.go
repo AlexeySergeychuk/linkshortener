@@ -13,15 +13,12 @@ import (
 func main() {
 	config.ParseFlags()
 
-	// создаём предустановленный регистратор zap
 	logger, err := zap.NewDevelopment()
 	if err != nil {
-		// вызываем панику, если ошибка
 		panic(err)
 	}
 	defer logger.Sync()
 
-	// делаем регистратор SugaredLogger
 	sugar := *logger.Sugar()
 
 	mapStorage := make(map[string]string)
@@ -32,8 +29,9 @@ func main() {
 
 	router := gin.Default()
 	router.Use(handlers.WithLogging(&sugar))
-	router.POST("/", handler.CreateLinkHandler)
-	router.GET("/:id", handler.GetLinkHandler)
+	router.POST("/", handler.CreateShortLinkHandler)
+	router.GET("/:id", handler.GetFullLinkHandler)
+	router.POST("/api/shorten", handler.GetShortLinkHandler)
 
 	router.Run(config.FlagRunAddr)
 }

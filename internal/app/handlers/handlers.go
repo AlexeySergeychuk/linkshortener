@@ -4,13 +4,16 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mailru/easyjson"
 )
 
 type Shortener interface {
 	MakeShortLink(link string) string
 	GetFullLink(shortLink string) string
+	GetShortLink(fullLink string) string
 }
 
 type Handler struct {
@@ -22,7 +25,7 @@ func NewHandler(s Shortener) *Handler {
 }
 
 // Создаем короткую ссылку
-func (h *Handler) CreateLinkHandler(c *gin.Context) {
+func (h *Handler) CreateShortLinkHandler(c *gin.Context) {
 
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -46,7 +49,7 @@ func (h *Handler) CreateLinkHandler(c *gin.Context) {
 }
 
 // Вовращаем полную ссылку
-func (h *Handler) GetLinkHandler(c *gin.Context) {
+func (h *Handler) GetFullLinkHandler(c *gin.Context) {
 	shortLink := c.Param("id")
 
 	log.Printf("shortLink in request: %s", shortLink)
@@ -58,4 +61,38 @@ func (h *Handler) GetLinkHandler(c *gin.Context) {
 	log.Printf("Fulllink: %s", fullLink)
 
 	c.Redirect(http.StatusTemporaryRedirect, fullLink)
+}
+
+func (h *Handler) GetShortLinkHandler(c *gin.Context) {
+
+	var link URLRequest
+	if err := easyjson.UnmarshalFromReader(c.Request.Body, &link); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+	}
+
+	defer c.Request.Body.Close()
+
+	if link.URL == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Передана пустая ссылка"})
+		return
+	}
+
+	shortLink := h.shortener.GetShortLink(link.URL)
+
+	if shortLink == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Короткая ссылка не найдена"})
+		return
+	}
+
+	urlResponse := URLResponse{
+		Result: shortLink,
+	}
+
+	response, err := easyjson.Marshal(urlResponse)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+	c.Writer.Header().Set("Content-Length", strconv.Itoa(len(response)))
+	c.Data(http.StatusOK, "application/json", response)
 }
