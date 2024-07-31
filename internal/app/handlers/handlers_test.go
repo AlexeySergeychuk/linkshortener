@@ -45,6 +45,9 @@ func (s *mockShortLinker) MakeShortPath(link string) string {
 }
 
 func TestHandler_CreateShortLinkHandler(t *testing.T) {
+
+	config.FlagShortLinkAddr = "http://localhost:8080"
+
 	type want struct {
 		code         int
 		responseText string
@@ -222,9 +225,9 @@ func TestHandler_GetShortLinkHandler(t *testing.T) {
 			shortLink:         "/ggh3t",
 			headerName:        "Content-Length",
 			want: want{
-				code: http.StatusOK,
+				code: http.StatusCreated,
 				urlResponse: URLResponse{
-					Result: "http://localhost:8080/ggh3t",
+					Result: config.FlagShortLinkAddr + "/ggh3t",
 				},
 				headerValue: "40",
 			},
@@ -235,22 +238,6 @@ func TestHandler_GetShortLinkHandler(t *testing.T) {
 				URL: "",
 			},
 			isAlreadyHaveLink: true,
-			shortLink:         "",
-			headerName:        "Content-Length",
-			want: want{
-				code: http.StatusBadRequest,
-				urlResponse: URLResponse{
-					Result: "",
-				},
-				headerValue: "",
-			},
-		},
-		{
-			name: "has no short link in BD",
-			urlRequest: URLRequest{
-				URL: "https:sometest.ru",
-			},
-			isAlreadyHaveLink: false,
 			shortLink:         "",
 			headerName:        "Content-Length",
 			want: want{
@@ -294,7 +281,6 @@ func TestHandler_GetShortLinkHandler(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, test.want.urlResponse, resBody)
 			}
-
 		})
 	}
 }

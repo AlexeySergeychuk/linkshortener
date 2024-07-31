@@ -43,14 +43,6 @@ func (s *Shorten) GetFullLink(shortLink string) string {
 	return s.repo.FindByShortLink(shortLink)
 }
 
-// Возвращаем короткий линк
-func (s *Shorten) GetShortLink(fullLink string) string {
-	if hasSavedLink, shortLink := s.repo.FindByFullLink(fullLink); hasSavedLink {
-		return makeShortLink(shortLink)
-	}
-	return ""
-}
-
 // Возвращает готовый короткий урл
 func makeShortLink(shortLink string) string {
 	return config.FlagShortLinkAddr + shortLink

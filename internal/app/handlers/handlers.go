@@ -13,7 +13,6 @@ import (
 type Shortener interface {
 	MakeShortLink(link string) string
 	GetFullLink(shortLink string) string
-	GetShortLink(fullLink string) string
 }
 
 type Handler struct {
@@ -77,12 +76,7 @@ func (h *Handler) GetShortLinkHandler(c *gin.Context) {
 		return
 	}
 
-	shortLink := h.shortener.GetShortLink(link.URL)
-
-	if shortLink == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Короткая ссылка не найдена"})
-		return
-	}
+	shortLink := h.shortener.MakeShortLink(link.URL)
 
 	urlResponse := URLResponse{
 		Result: shortLink,
@@ -94,5 +88,5 @@ func (h *Handler) GetShortLinkHandler(c *gin.Context) {
 		return
 	}
 	c.Writer.Header().Set("Content-Length", strconv.Itoa(len(response)))
-	c.Data(http.StatusOK, "application/json", response)
+	c.Data(http.StatusCreated, "application/json", response)
 }
