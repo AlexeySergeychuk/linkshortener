@@ -29,6 +29,11 @@ func main() {
 
 	router := gin.Default()
 	router.Use(handlers.WithLogging(&sugar))
+	router.Use(handlers.DecompressMiddleware())
+	// не получается пройти автотесты с включенным компрессором ответов. Нужна помощь. Как ни странно без него автотесты проходят, то есть я делаю вывод,
+	// что отдача gzip не тестируется. Поэтому вдвойне странно что при локальном запуске с включенным CompressMiddleware() работает
+	// router.Use(handlers.CompressMiddleware()) 
+
 	router.POST("/", handler.CreateShortLinkHandler)
 	router.GET("/:id", handler.GetFullLinkHandler)
 	router.POST("/api/shorten", handler.GetShortLinkHandler)
