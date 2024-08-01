@@ -44,7 +44,7 @@ func main() {
 	}
 
 	for _, url := range urls {
-		memRepo.SaveLinks(url.ShortUrl, url.FullUrl)
+		memRepo.SaveLinks(url.ShortURL, url.FullURL)
 	}
 
 	shortLinkStub := shortener.NewShortLink()

@@ -1,6 +1,8 @@
 package shortener
 
 import (
+	"log"
+
 	"github.com/AlexeySergeychuk/linkshortener/internal/app/config"
 	"github.com/AlexeySergeychuk/linkshortener/internal/app/repo"
 )
@@ -46,10 +48,10 @@ func (s *Shorten) MakeShortLink(link string) string {
 
 	// Параллельное сохранение в файл
 	if err := s.fileProducer.WriteEvent(repo.URLdto{
-		ShortUrl: shortPath,
-		FullUrl:  link,
+		ShortURL: shortPath,
+		FullURL:  link,
 	}); err != nil {
-
+		log.Printf("Error writing event to file: %v", err)
 	}
 
 	return makeShortLink(shortPath)

@@ -277,6 +277,7 @@ func TestHandler_GetShortLinkHandler(t *testing.T) {
 			router.POST("/api/shorten", handler.GetShortLinkHandler)
 
 			body, err := easyjson.Marshal(test.urlRequest)
+			require.NoError(t, err, "failed to read response body")
 			request := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBuffer(body))
 			w := httptest.NewRecorder()
 

@@ -89,8 +89,8 @@ func TestMakeShortLink(t *testing.T) {
 				mockRepository.On("SaveLinks", mock.Anything, test.link)
 				mockShortLinker.On("MakeShortPath", test.link).Return(test.shortPath)
 				mockFileProducer.On("WriteEvent", repo.URLdto{
-					ShortUrl: test.shortPath,
-					FullUrl:  test.link,
+					ShortURL: test.shortPath,
+					FullURL:  test.link,
 				}).Return(nil).Once()
 			}
 
