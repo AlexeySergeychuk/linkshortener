@@ -32,16 +32,21 @@ func (c *compressWriter) Header() http.Header {
 }
 
 func (c *compressWriter) Write(p []byte) (int, error) {
-	c.written = true
-	return c.zw.Write(p)
+	if !c.headerWritten {
+        c.w.Header().Set("Content-Encoding", "gzip")
+        c.headerWritten = true
+    }
+    return c.zw.Write(p)
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
-	c.written = true
-	if statusCode < 300 {
-		c.w.Header().Set("Content-Encoding", "gzip")
-	}
-	c.w.WriteHeader(statusCode)
+	if !c.headerWritten {
+        if statusCode < 300 {
+            c.w.Header().Set("Content-Encoding", "gzip")
+        }
+        c.w.WriteHeader(statusCode)
+        c.headerWritten = true
+    }
 }
 
 // WriteHeaderNow записывает заголовки немедленно
@@ -63,7 +68,10 @@ func (c *compressWriter) Flush() {
 
 // Close закрывает gzip.Writer и досылает все данные из буфера.
 func (c *compressWriter) Close() error {
-	return c.zw.Close()
+    if err := c.zw.Close(); err != nil {
+        return err
+    }
+    return nil
 }
 
 // CloseNotify не поддерживается в gzip.Writer, поэтому возвращаем канал,
