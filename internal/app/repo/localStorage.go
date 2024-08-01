@@ -1,4 +1,4 @@
-package repository
+package repo
 
 type Repo struct {
 	bdStub map[string]string

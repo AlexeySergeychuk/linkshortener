@@ -1,26 +1,37 @@
 package shortener
 
-import "github.com/AlexeySergeychuk/linkshortener/internal/app/config"
+import (
+	"log"
 
-type Repository interface {
+	"github.com/AlexeySergeychuk/linkshortener/internal/app/config"
+	"github.com/AlexeySergeychuk/linkshortener/internal/app/repo"
+)
+
+type repository interface {
 	SaveLinks(shortPath, link string)
 	FindByShortLink(shortLink string) string
 	FindByFullLink(link string) (bool, string)
 }
 
-type ShortLinker interface {
+type shortLinker interface {
 	MakeShortPath(link string) string
 }
 
-type Shorten struct {
-	repo        Repository
-	shortLinker ShortLinker
+type FileProducer interface {
+	WriteEvent(event repo.URLdto) error
 }
 
-func NewShortener(r Repository, s ShortLinker) *Shorten {
+type Shorten struct {
+	repo         repository
+	fileProducer FileProducer
+	shortLinker  shortLinker
+}
+
+func NewShortener(repo repository, fileProducer FileProducer, s shortLinker) *Shorten {
 	return &Shorten{
-		repo:        r,
-		shortLinker: s,
+		repo:         repo,
+		fileProducer: fileProducer,
+		shortLinker:  s,
 	}
 }
 
@@ -35,6 +46,14 @@ func (s *Shorten) MakeShortLink(link string) string {
 	shortPath := s.shortLinker.MakeShortPath(link)
 	s.repo.SaveLinks(shortPath, link)
 
+	// Параллельное сохранение в файл
+	if err := s.fileProducer.WriteEvent(repo.URLdto{
+		ShortURL: shortPath,
+		FullURL:  link,
+	}); err != nil {
+		log.Printf("Error writing event to file: %v", err)
+	}
+
 	return makeShortLink(shortPath)
 }
 
@@ -44,6 +63,6 @@ func (s *Shorten) GetFullLink(shortLink string) string {
 }
 
 // Возвращает готовый короткий урл
-func makeShortLink(randomstring string) string {
-	return config.FlagShortLinkAddr + randomstring
+func makeShortLink(shortLink string) string {
+	return config.FlagShortLinkAddr + shortLink
 }
