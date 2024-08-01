@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/AlexeySergeychuk/linkshortener/internal/app/config"
+	"github.com/AlexeySergeychuk/linkshortener/internal/app/repo"
 	"github.com/AlexeySergeychuk/linkshortener/internal/app/shortener"
 	"github.com/gin-gonic/gin"
 	"github.com/mailru/easyjson"
@@ -22,6 +23,10 @@ type mockRepository struct {
 }
 
 type mockShortLinker struct {
+	mock.Mock
+}
+
+type mockFileProducer struct {
 	mock.Mock
 }
 
@@ -42,6 +47,11 @@ func (s *mockRepository) FindByFullLink(link string) (bool, string) {
 func (s *mockShortLinker) MakeShortPath(link string) string {
 	args := s.Called(link)
 	return args.String(0)
+}
+
+func (m *mockFileProducer) WriteEvent(event repo.URLdto) error {
+	args := m.Called(event)
+	return args.Error(0)
 }
 
 func TestHandler_CreateShortLinkHandler(t *testing.T) {
@@ -97,6 +107,7 @@ func TestHandler_CreateShortLinkHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// Arrange
 			mockRepository := new(mockRepository)
+			mockFileProducer := new(mockFileProducer)
 			mockShortLinker := new(mockShortLinker)
 
 			mockRepository.On("FindByFullLink", test.requestBody).Return(test.isAlreadyHaveLink, test.shortLink)
@@ -104,9 +115,10 @@ func TestHandler_CreateShortLinkHandler(t *testing.T) {
 			if !test.isAlreadyHaveLink {
 				mockRepository.On("SaveLinks", mock.Anything, test.requestBody)
 				mockShortLinker.On("MakeShortPath", test.requestBody).Return(test.shortLink)
+				mockFileProducer.On("WriteEvent", mock.Anything).Return(nil)
 			}
 
-			shortener := shortener.NewShortener(mockRepository, mockShortLinker)
+			shortener := shortener.NewShortener(mockRepository, mockFileProducer, mockShortLinker)
 			handler := NewHandler(shortener)
 
 			router := gin.Default()
@@ -176,10 +188,11 @@ func TestHandler_GetFullLinkHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// Assert
 			mockRepository := new(mockRepository)
+			mockFileProducer := new(mockFileProducer)
 			mockShortLinker := new(mockShortLinker)
 			mockRepository.On("FindByShortLink", mock.Anything).Return(test.want.headerValue)
 
-			shortener := shortener.NewShortener(mockRepository, mockShortLinker)
+			shortener := shortener.NewShortener(mockRepository, mockFileProducer, mockShortLinker)
 			handler := NewHandler(shortener)
 
 			router := gin.Default()
@@ -253,10 +266,11 @@ func TestHandler_GetShortLinkHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// Assert
 			mockRepository := new(mockRepository)
+			mockFileProducer := new(mockFileProducer)
 			mockShortLinker := new(mockShortLinker)
 			mockRepository.On("FindByFullLink", mock.Anything).Return(test.isAlreadyHaveLink, test.shortLink)
 
-			shortener := shortener.NewShortener(mockRepository, mockShortLinker)
+			shortener := shortener.NewShortener(mockRepository, mockFileProducer, mockShortLinker)
 			handler := NewHandler(shortener)
 
 			router := gin.Default()

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/AlexeySergeychuk/linkshortener/internal/app/config"
+	"github.com/AlexeySergeychuk/linkshortener/internal/app/repo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -13,6 +14,10 @@ type mockRepository struct {
 }
 
 type mockShortLinker struct {
+	mock.Mock
+}
+
+type mockFileProducer struct {
 	mock.Mock
 }
 
@@ -33,6 +38,11 @@ func (s *mockRepository) FindByFullLink(link string) (bool, string) {
 func (s *mockShortLinker) MakeShortPath(link string) string {
 	args := s.Called(link)
 	return args.String(0)
+}
+
+func (m *mockFileProducer) WriteEvent(event repo.URLdto) error {
+	args := m.Called(event)
+	return args.Error(0)
 }
 
 func TestMakeShortLink(t *testing.T) {
@@ -69,18 +79,28 @@ func TestMakeShortLink(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepository := new(mockRepository)
 			mockShortLinker := new(mockShortLinker)
+			mockFileProducer := new(mockFileProducer)
 
-			shortener := NewShortener(mockRepository, mockShortLinker)
+			shortener := NewShortener(mockRepository, mockFileProducer, mockShortLinker)
 
 			mockRepository.On("FindByFullLink", test.link).Return(test.isAlreadyHaveLink, test.want.shortLink)
 
 			if !test.isAlreadyHaveLink {
 				mockRepository.On("SaveLinks", mock.Anything, test.link)
 				mockShortLinker.On("MakeShortPath", test.link).Return(test.shortPath)
+				mockFileProducer.On("WriteEvent", repo.URLdto{
+					ShortUrl: test.shortPath,
+					FullUrl:  test.link,
+				}).Return(nil).Once()
 			}
 
 			shortLink := shortener.MakeShortLink(test.link)
 			assert.Equal(t, test.want.shortLink, shortLink)
+
+			// Проверка вызова WriteEvent только если ссылка новая
+			if !test.isAlreadyHaveLink {
+				mockFileProducer.AssertExpectations(t)
+			}
 		})
 	}
 }
